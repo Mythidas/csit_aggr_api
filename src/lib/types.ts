@@ -14,6 +14,16 @@ export type _Placeholder = {
   ticketparams?: TicketParams;
 }
 
+export interface AutoTaskAPIFilter<T> {
+  Filter: {
+    field: keyof T;
+    op: "eq" | "noteq" | "gt" | "gte" | "lt" | "lte" | "beginsWith" | "endsWith" | "contains" | "exist" | "notExist" | "in" | "notIn";
+    value: string | number | string[] | number[];
+  }[];
+  MaxRecords?: number;
+  IncludeFields?: (keyof T)[];
+}
+
 export type AutoTaskTicket = {
   id: number;
   apiVendorID: number;

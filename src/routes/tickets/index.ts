@@ -1,25 +1,21 @@
-import { FastifyPluginAsync } from "fastify"
+import { FastifyPluginAsync } from "fastify";
+import { AutoTaskAPIFilter, AutoTaskTicket } from "../../lib/types.js";
+import AutoTask from "../../lib/autotask.js";
 
 const tickets: FastifyPluginAsync = async (fastify, opts): Promise<void> => {
   fastify.get('/', async function (request, reply) {
-    const ticketFetch = await fetch(`${process.env.AUTOTASK_URL}/Tickets/query?search={"filter":[{"op":"noteq","field":"Status","value":5},{"op":"eq","field":"CompanyID","value":175}]}`, {
-      method: "GET",
-      headers: {
-        "APIIntegrationcode": process.env.AUTOTASK_TRACKER!,
-        "UserName": process.env.AUTOTASK_USER_ID!,
-        "Secret": process.env.AUTOTASK_SECRET!,
-        "Content-Type": "application/json"
-      }
-    });
-
-    if (!ticketFetch.ok) {
-      console.error(ticketFetch.statusText);
-      return "no tickets"
+    // 3 months
+    const dateFilter = new Date(Date.now() - (1000 * 60 * 60 * 24 * 30 * 3));
+    const filters: AutoTaskAPIFilter<AutoTaskTicket> = {
+      Filter: [
+        { op: "gte", field: "createDate", value: dateFilter.toISOString().substring(0, 10) },
+        { op: "gt", field: "assignedResourceID", value: "0" }
+      ],
     }
 
-    const tickets = ticketFetch.json();
+    const autotask = new AutoTask();
+    const tickets = await autotask.getTickets(filters);
 
-    console.log(await ticketFetch.json());
     return tickets;
   })
 }
