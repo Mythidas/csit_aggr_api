@@ -1,21 +1,26 @@
-import { AutoTaskAPIFilter, AutoTaskFieldInfo, AutoTaskFieldValue, AutoTaskTicket } from "./types.js";
+import { AutoTaskAPIFilter, AutoTaskFieldInfo, AutoTaskFieldValue, AutoTaskResource, AutoTaskTicket } from "./types.js";
 
 const {
   AUTOTASK_TRACKER,
   AUTOTASK_URL,
-  AUTOTASK_USER_ID,
-  AUTOTASK_SECRET
 } = process.env;
 
 export default class AutoTask {
+  private resources: AutoTaskResource[] = [];
   private ticketFields: AutoTaskFieldInfo[] = [];
   private statusList: AutoTaskFieldValue[] = [];
 
-  constructor() {
+  private autotaskUserID: string;
+  private autotaskSecret: string;
+
+  constructor(apiUser: string, apiSecret: string) {
+    this.autotaskUserID = apiUser;
+    this.autotaskSecret = apiSecret;
     this.init();
   }
 
   private async init() {
+    this.resources = await this.getResources();
     this.ticketFields = await this.getTicketFields();
     this.statusList = this.getFieldList("status");
   }
@@ -29,8 +34,8 @@ export default class AutoTask {
         method: "GET",
         headers: {
           "APIIntegrationcode": AUTOTASK_TRACKER!,
-          "UserName": AUTOTASK_USER_ID!,
-          "Secret": AUTOTASK_SECRET!,
+          "UserName": this.autotaskUserID,
+          "Secret": this.autotaskSecret,
           "Content-Type": "application/json"
         }
       });
@@ -44,7 +49,13 @@ export default class AutoTask {
       const ticketItems = ticketData.items as any[];
 
       for (const ticket of ticketItems) {
-        ticket.status = this.statusList.find(field => field.value === String(ticket.status))?.label || ticket.status;
+        const status = this.statusList.find(field => field.value === String(ticket.status));
+        ticket.status = status?.label || ticket.status;
+
+        const resource = this.resources.find(res => res.id === ticket.assignedResourceID);
+        ticket.assignedResourceID = `${resource?.firstName} ${resource?.lastName}` || ticket.assignedResourceID;
+
+        ticket.createDate = ticket.createDate.substring(0, 10);
       }
 
       tickets.push(...ticketItems);
@@ -62,8 +73,8 @@ export default class AutoTask {
         method: "GET",
         headers: {
           "APIIntegrationcode": AUTOTASK_TRACKER!,
-          "UserName": AUTOTASK_USER_ID!,
-          "Secret": AUTOTASK_SECRET!,
+          "UserName": this.autotaskUserID,
+          "Secret": this.autotaskSecret,
           "Content-Type": "application/json"
         }
       });
@@ -85,5 +96,38 @@ export default class AutoTask {
   private getFieldList(key: keyof AutoTaskTicket) {
     const fieldInfo = this.ticketFields.find(fieldInfo => fieldInfo.name === key);
     return fieldInfo?.picklistValues.filter(val => val.isActive) || [];
+  }
+
+  // ========== Resources ============
+  async getResources() {
+    try {
+      const filters: AutoTaskAPIFilter<AutoTaskResource> = {
+        Filter: [
+          { field: "isActive", op: "eq", value: "true" },
+          { field: "licenseType", op: "in", value: [1, 3] } // 1 = full, 3 = limited
+        ]
+      }
+
+      const resourceFetch = await fetch(`${AUTOTASK_URL}/Resources/query?search=${JSON.stringify(filters)}`, {
+        method: "GET",
+        headers: {
+          "APIIntegrationcode": AUTOTASK_TRACKER!,
+          "UserName": this.autotaskUserID,
+          "Secret": this.autotaskSecret,
+          "Content-Type": "application/json"
+        }
+      });
+
+      if (!resourceFetch.ok) {
+        console.error(resourceFetch.statusText);
+        return [];
+      }
+
+      const resourceData = await resourceFetch.json() as any;
+      return resourceData.items as AutoTaskResource[];
+    } catch (err) {
+      console.error(err);
+      return [];
+    }
   }
 }
