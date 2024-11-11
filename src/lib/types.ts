@@ -283,6 +283,16 @@ export type AutoTaskResource = {
   userType: number;
 }
 
+export type AutoTaskCategory = {
+  id: number;
+  displayColorRGB: number;
+  isActive: boolean;
+  isApiOnly: boolean;
+  isGlobalDefault: boolean;
+  name: string;
+  nickname: string;
+}
+
 export type AutoTaskFieldInfo = {
   name: string;
   dataType: string;

@@ -11,7 +11,7 @@ const tickets: FastifyPluginAsync = async (fastify, opts): Promise<void> => {
       throw "Invalid headers";
     }
 
-    const dateFilter = new Date(Date.now() - (1000 * 60 * 60 * 24 * 30 * 12));
+    const dateFilter = new Date(Date.now() - (1000 * 60 * 60 * 24 * 30 * 9));
     const filters: AutoTaskAPIFilter<AutoTaskTicket> = {
       Filter: [
         { op: "gte", field: "createDate", value: dateFilter.toISOString().substring(0, 10) },
