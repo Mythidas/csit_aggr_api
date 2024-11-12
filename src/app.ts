@@ -1,5 +1,5 @@
 import * as path from 'path';
-import AutoLoad, {AutoloadPluginOptions} from '@fastify/autoload';
+import AutoLoad, { AutoloadPluginOptions } from '@fastify/autoload';
 import { FastifyPluginAsync } from 'fastify';
 import { fileURLToPath } from 'url'
 
@@ -16,8 +16,8 @@ const options: AppOptions = {
 }
 
 const app: FastifyPluginAsync<AppOptions> = async (
-    fastify,
-    opts
+  fastify,
+  opts
 ): Promise<void> => {
   // Place here your custom code!
 
@@ -40,6 +40,10 @@ const app: FastifyPluginAsync<AppOptions> = async (
     forceESM: true
   })
 
+  void fastify.register(import("@fastify/rate-limit"), {
+    max: 1,
+    timeWindow: "1 minute"
+  })
 };
 
 export default app;
