@@ -42,7 +42,7 @@ const app: FastifyPluginAsync<AppOptions> = async (
 
   void fastify.register(import("@fastify/rate-limit"), {
     max: 1,
-    timeWindow: "1 minute"
+    timeWindow: "5 minute"
   })
 };
 
