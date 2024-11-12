@@ -29,5 +29,4 @@ jobs:
             git reset --hard HEAD~1
             git pull
             npm install
-            npm run build
             pm2 restart csit_aggr_api
