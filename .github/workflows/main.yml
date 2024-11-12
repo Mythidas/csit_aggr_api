@@ -30,4 +30,4 @@ jobs:
             git pull
             npm install
             npm run build
-            pm2 restart cs_toolbox
+            pm2 restart csit_aggr_api
