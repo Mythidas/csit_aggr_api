@@ -16,7 +16,7 @@ const tickets: FastifyPluginAsync = async (fastify, opts): Promise<void> => {
       reply.header('content-type', 'application/json');
       reply.raw.write('[');
 
-      const dateFilter = new Date(Date.now() - (1000 * 60 * 60 * 24 * 30 * 1));
+      const dateFilter = new Date(Date.now() - (1000 * 60 * 60 * 24 * 30 * 12));
       const filters: AutoTaskAPIFilter<AutoTaskTicket> = {
         Filter: [
           { op: "gte", field: "createDate", value: dateFilter.toISOString().substring(0, 10) },
