@@ -40,6 +40,65 @@ export default class AutoTask {
     this.initialized = true;
   }
 
+  async getTicketsStream(filters: AutoTaskAPIFilter<AutoTaskTicket>, nextPage: string) {
+    try {
+      if (!this.initialized) {
+        await this.init();
+        console.log('Initialized...');
+      }
+
+      const ticketFetch = await fetch(nextPage || `${AUTOTASK_URL}/Tickets/query?search=${JSON.stringify(filters)}`, {
+        method: "GET",
+        headers: {
+          "APIIntegrationcode": AUTOTASK_TRACKER!,
+          "UserName": this.autotaskUserID,
+          "Secret": this.autotaskSecret,
+          "Content-Type": "application/json"
+        }
+      });
+
+      if (!ticketFetch.ok) {
+        throw Error(ticketFetch.statusText);
+      }
+
+      const ticketData: any = await ticketFetch.json();
+      const ticketItems = ticketData.items as any[];
+
+      for (const ticket of ticketItems) {
+        const status = this.statusList.find(field => field.value === String(ticket.status));
+        ticket.status = status?.label || ticket.status;
+
+        const priority = this.priorityList.find(field => field.value === String(ticket.priority));
+        ticket.priority = priority?.label || ticket.priority;
+
+        const issue = this.issueList.find(field => field.value === String(ticket.issueType));
+        ticket.issueType = issue?.label || ticket.issueType;
+
+        const subIssue = this.subIssueList.find(field => field.value === String(ticket.subIssueType));
+        ticket.subIssueType = subIssue?.label || ticket.subIssueType;
+
+        const queue = this.queueList.find(field => field.value === String(ticket.queueID));
+        ticket.queueID = queue?.label || ticket.queueID;
+
+        const resource = this.resources.find(res => res.id === ticket.assignedResourceID);
+        ticket.assignedResourceName = resource ? `${resource?.firstName} ${resource?.lastName}` : "None";
+
+        const category = this.categories.find(cat => cat.id === ticket.ticketCategory);
+        ticket.ticketCategory = category?.name || ticket.ticketCategory;
+
+        const company = this.companies.find(com => com.id === ticket.companyID);
+        ticket.companyName = company?.companyName || "";
+        ticket.companyID = company?.id || ticket.companyID;
+        ticket.parentCompanyID = company?.parentCompanyID || null;
+      }
+
+      return { tickets: ticketItems, nextPage: ticketData.pageDetails.nextPageUrl };
+    } catch (err) {
+      console.error(err);
+      return { tickets: [], nextPage: "" };
+    }
+  }
+
   async getTickets(filters: AutoTaskAPIFilter<AutoTaskTicket>) {
     if (!this.initialized) {
       await this.init();

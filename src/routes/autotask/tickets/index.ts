@@ -2,17 +2,9 @@ import { FastifyPluginAsync } from "fastify";
 import { AutoTaskAPIFilter, AutoTaskTicket } from "../../../lib/types.js";
 import AutoTask from "../../../lib/autotask.js";
 
-let isProcessing = false;
 
 const tickets: FastifyPluginAsync = async (fastify, opts): Promise<void> => {
   fastify.get('/', async function (request, reply) {
-    if (isProcessing) {
-      reply.code(429).send({ error: "Too many requests" });
-      return;
-    }
-
-    isProcessing = true;
-
     try {
       const apiUser = request.headers.username;
       const apiSecret = request.headers.secret;
@@ -21,7 +13,10 @@ const tickets: FastifyPluginAsync = async (fastify, opts): Promise<void> => {
         throw "Invalid headers";
       }
 
-      const dateFilter = new Date(Date.now() - (1000 * 60 * 60 * 24 * 30 * 9));
+      reply.header('content-type', 'application/json');
+      reply.raw.write('[');
+
+      const dateFilter = new Date(Date.now() - (1000 * 60 * 60 * 24 * 30 * 1));
       const filters: AutoTaskAPIFilter<AutoTaskTicket> = {
         Filter: [
           { op: "gte", field: "createDate", value: dateFilter.toISOString().substring(0, 10) },
@@ -30,14 +25,32 @@ const tickets: FastifyPluginAsync = async (fastify, opts): Promise<void> => {
       }
 
       const autotask = new AutoTask(apiUser as string, apiSecret as string);
-      const tickets = await autotask.getTickets(filters);
 
-      return tickets;
+      let nextPage = "";
+      let total = 0;
+      while (true) {
+        try {
+          const tickets = await autotask.getTicketsStream(filters, nextPage);
+
+          reply.raw.write(JSON.stringify(tickets.tickets));
+          total += tickets.tickets.length;
+          console.log(`Processed ${total} tickets...`);
+          if (tickets.tickets.length === 0 || !tickets.nextPage) {
+            break;
+          } else {
+            nextPage = tickets.nextPage;
+            reply.raw.write(',');
+          }
+        } catch {
+          break;
+        }
+      }
+
+      reply.raw.write(']');
+      reply.raw.end();
     } catch (err) {
       console.error(err);
       return;
-    } finally {
-      isProcessing = false;
     }
   })
 }
