@@ -83,6 +83,9 @@ export default class AutoTask {
         const resource = this.resources.find(res => res.id === ticket.assignedResourceID);
         ticket.assignedResourceName = resource ? `${resource?.firstName} ${resource?.lastName}` : "None";
 
+        const completedResource = this.resources.find(res => res.id === ticket.completedByResourceID);
+        ticket.completedByResourceName = completedResource ? `${completedResource.firstName} ${completedResource.lastName}` : "None";
+
         const category = this.categories.find(cat => cat.id === ticket.ticketCategory);
         ticket.ticketCategory = category?.name || ticket.ticketCategory;
 
@@ -152,7 +155,9 @@ export default class AutoTask {
           const company = this.companies.find(com => com.id === ticket.companyID);
           ticket.companyName = company?.companyName || "";
           ticket.companyID = company?.id || ticket.companyID;
-          ticket.parentCompanyID = company?.parentCompanyID || null;
+
+          const parentCompany = this.companies.find(com => com.id === company?.parentCompanyID);
+          ticket.parentCompanyName = parentCompany?.companyName || "None";
         }
 
         tickets.push(...ticketItems);
@@ -236,7 +241,8 @@ export default class AutoTask {
     try {
       const filters: AutoTaskAPIFilter<AutoTaskCompany> = {
         Filter: [
-          { field: "isActive", "op": "eq", "value": "true" }
+          { field: "isActive", "op": "eq", "value": "true" },
+          { field: "companyType", "op": "eq", "value": "1" }
         ]
       }
 
@@ -255,6 +261,8 @@ export default class AutoTask {
       }
 
       const companyData = await companyFetch.json() as any;
+
+      console.log(`Retrieved ${companyData.items.length} companies...`);
       return companyData.items as AutoTaskCompany[];
     } catch (err) {
       console.error(err);

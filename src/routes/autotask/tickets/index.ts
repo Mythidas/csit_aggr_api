@@ -8,6 +8,7 @@ const tickets: FastifyPluginAsync = async (fastify, opts): Promise<void> => {
     try {
       const apiUser = request.headers.username;
       const apiSecret = request.headers.secret;
+      const { year, month } = request.query as { year?: string; month?: string };
 
       if (!apiUser || !apiSecret) {
         throw "Invalid headers";
@@ -16,15 +17,17 @@ const tickets: FastifyPluginAsync = async (fastify, opts): Promise<void> => {
       reply.header('content-type', 'application/json');
       reply.raw.write('[');
 
-      const dateFilter = new Date(Date.now() - (1000 * 60 * 60 * 24 * 30 * 12));
+      const today = new Date();
+      const dateFilter = `${year || today.getFullYear()}-${month || 1}-01`;
+
       const filters: AutoTaskAPIFilter<AutoTaskTicket> = {
         Filter: [
-          { op: "gte", field: "createDate", value: dateFilter.toISOString().substring(0, 10) },
-          { op: "gt", field: "assignedResourceID", value: "0" }
+          { op: "gte", field: "createDate", value: dateFilter },
         ],
       }
 
       const autotask = new AutoTask(apiUser as string, apiSecret as string);
+      console.log(`Retrieving ticekts >= ${dateFilter}...`);
 
       let nextPage = "";
       let total = 0;
