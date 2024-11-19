@@ -1,4 +1,4 @@
-import { AutoTaskAPIFilter, AutoTaskCategory, AutoTaskCompany, AutoTaskFieldInfo, AutoTaskFieldValue, AutoTaskResource, AutoTaskTicket } from "./types.js";
+import { AutoTaskAPIFilter, AutoTaskCategory, AutoTaskCompany, AutoTaskFieldInfo, AutoTaskFieldValue, AutoTaskResource, AutoTaskTicket, AutoTaskTimeEntry } from "./types.js";
 
 const {
   AUTOTASK_TRACKER,
@@ -102,74 +102,39 @@ export default class AutoTask {
     }
   }
 
-  async getTickets(filters: AutoTaskAPIFilter<AutoTaskTicket>) {
-    if (!this.initialized) {
-      await this.init();
-    }
-
+  async getTimeEntriesStream(filters: AutoTaskAPIFilter<AutoTaskTimeEntry>, nextPage: string) {
     try {
-      const tickets: any[] = [];
-      let ticketURL = `${AUTOTASK_URL}/Tickets/query?search=${JSON.stringify(filters)}`;
-
-      while (tickets.length < 30000 && ticketURL !== null) {
-        const ticketFetch = await fetch(ticketURL, {
-          method: "GET",
-          headers: {
-            "APIIntegrationcode": AUTOTASK_TRACKER!,
-            "UserName": this.autotaskUserID,
-            "Secret": this.autotaskSecret,
-            "Content-Type": "application/json"
-          }
-        });
-
-        if (!ticketFetch.ok) {
-          console.error(ticketFetch.statusText);
-          return [];
-        }
-
-        const ticketData: any = await ticketFetch.json();
-        const ticketItems = ticketData.items as any[];
-
-        for (const ticket of ticketItems) {
-          const status = this.statusList.find(field => field.value === String(ticket.status));
-          ticket.status = status?.label || ticket.status;
-
-          const priority = this.priorityList.find(field => field.value === String(ticket.priority));
-          ticket.priority = priority?.label || ticket.priority;
-
-          const issue = this.issueList.find(field => field.value === String(ticket.issueType));
-          ticket.issueType = issue?.label || ticket.issueType;
-
-          const subIssue = this.subIssueList.find(field => field.value === String(ticket.subIssueType));
-          ticket.subIssueType = subIssue?.label || ticket.subIssueType;
-
-          const queue = this.queueList.find(field => field.value === String(ticket.queueID));
-          ticket.queueID = queue?.label || ticket.queueID;
-
-          const resource = this.resources.find(res => res.id === ticket.assignedResourceID);
-          ticket.assignedResourceName = resource ? `${resource?.firstName} ${resource?.lastName}` : "None";
-
-          const category = this.categories.find(cat => cat.id === ticket.ticketCategory);
-          ticket.ticketCategory = category?.name || ticket.ticketCategory;
-
-          const company = this.companies.find(com => com.id === ticket.companyID);
-          ticket.companyName = company?.companyName || "";
-          ticket.companyID = company?.id || ticket.companyID;
-
-          const parentCompany = this.companies.find(com => com.id === company?.parentCompanyID);
-          ticket.parentCompanyName = parentCompany?.companyName || "None";
-        }
-
-        tickets.push(...ticketItems);
-        ticketURL = ticketData.pageDetails.nextPageUrl;
-
-        console.log(`[AutoTask] Retrieved ${tickets.length} tickets...`);
+      if (!this.initialized) {
+        await this.init();
+        console.log('Initialized...');
       }
 
-      return tickets;
+      const timeEntryFetch = await fetch(nextPage || `${AUTOTASK_URL}/TimeEntries/query?search=${JSON.stringify(filters)}`, {
+        method: "GET",
+        headers: {
+          "APIIntegrationcode": AUTOTASK_TRACKER!,
+          "UserName": this.autotaskUserID,
+          "Secret": this.autotaskSecret,
+          "Content-Type": "application/json"
+        }
+      });
+
+      if (!timeEntryFetch.ok) {
+        throw Error(timeEntryFetch.statusText);
+      }
+
+      const timeEntryData: any = await timeEntryFetch.json();
+      const timeEntryItems = timeEntryData.items as any[];
+
+      for (const timeEntry of timeEntryItems) {
+        const resource = this.resources.find(res => res.id === timeEntry.resourceID);
+        timeEntry.resourceName = resource ? `${resource.firstName} ${resource.lastName}` : "None";
+      }
+
+      return { timeEntries: timeEntryItems, nextPage: timeEntryData.pageDetails.nextPageUrl };
     } catch (err) {
       console.error(err);
-      return [];
+      return { timeEntries: [], nextPage: "" };
     }
   }
 

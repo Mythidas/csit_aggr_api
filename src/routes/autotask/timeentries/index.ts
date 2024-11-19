@@ -1,9 +1,9 @@
 import { FastifyPluginAsync } from "fastify";
-import { AutoTaskAPIFilter, AutoTaskTicket } from "../../../lib/types.js";
+import { AutoTaskAPIFilter, AutoTaskTimeEntry } from "../../../lib/types.js";
 import AutoTask from "../../../lib/autotask.js";
 
 
-const tickets: FastifyPluginAsync = async (fastify, opts): Promise<void> => {
+const timeEntries: FastifyPluginAsync = async (fastify, opts): Promise<void> => {
   fastify.get('/', async function (request, reply) {
     try {
       const apiUser = request.headers.username;
@@ -20,29 +20,29 @@ const tickets: FastifyPluginAsync = async (fastify, opts): Promise<void> => {
       const today = new Date();
       const dateFilter = `${year || today.getFullYear()}-${month || 1}-01`;
 
-      const filters: AutoTaskAPIFilter<AutoTaskTicket> = {
+      const filters: AutoTaskAPIFilter<AutoTaskTimeEntry> = {
         Filter: [
-          { op: "gte", field: "createDate", value: dateFilter },
-          { op: "in", field: "queueID", value: [29683481, 29683508] } // Support & Triage
+          { op: "gte", field: "createDateTime", value: dateFilter },
         ],
       }
 
       const autotask = new AutoTask(apiUser as string, apiSecret as string);
-      console.log(`Retrieving ticekts >= ${dateFilter}...`);
+      console.log(`Retrieving time entries >= ${dateFilter}...`);
 
       let nextPage = "";
       let total = 0;
       while (true) {
         try {
-          const tickets = await autotask.getTicketsStream(filters, nextPage);
+          const timeEntries = await autotask.getTimeEntriesStream(filters, nextPage);
 
-          reply.raw.write(JSON.stringify(tickets.tickets));
-          total += tickets.tickets.length;
-          console.log(`Processed ${total} tickets...`);
-          if (tickets.tickets.length === 0 || !tickets.nextPage) {
+          reply.raw.write(JSON.stringify(timeEntries.timeEntries));
+          total += timeEntries.timeEntries.length;
+          console.log(`Processed ${total} time entries...`);
+          if (timeEntries.timeEntries.length === 0 || !timeEntries.nextPage) {
+            console.log(`All time entires processed... ${timeEntries.timeEntries.length} | ${timeEntries.nextPage}`);
             break;
           } else {
-            nextPage = tickets.nextPage;
+            nextPage = timeEntries.nextPage;
             reply.raw.write(',');
           }
         } catch {
@@ -59,4 +59,4 @@ const tickets: FastifyPluginAsync = async (fastify, opts): Promise<void> => {
   })
 }
 
-export default tickets;
+export default timeEntries;

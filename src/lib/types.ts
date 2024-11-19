@@ -103,6 +103,40 @@ export type AutoTaskTicket = {
   userDefinedFields: AutoTaskUDF[];
 }
 
+export type AutoTaskTimeEntry = {
+  id: number;
+  billingApprovalDateTime: string; // ISO date string
+  billingApprovalLevelMostRecent: number;
+  billingApprovalResourceID: number;
+  billingCodeID: number;
+  contractID: number;
+  contractServiceBundleID: number;
+  contractServiceID: number;
+  createDateTime: string; // ISO date string
+  creatorUserID: number;
+  dateWorked: string; // ISO date string
+  endDateTime: string; // ISO date string
+  hoursToBill: number;
+  hoursWorked: number;
+  impersonatorCreatorResourceID: number;
+  impersonatorUpdaterResourceID: number;
+  internalBillingCodeID: number;
+  internalNotes: string;
+  isInternalNotesVisibleToComanaged: boolean;
+  isNonBillable: boolean;
+  lastModifiedDateTime: string; // ISO date string
+  lastModifiedUserID: number;
+  offsetHours: number;
+  resourceID: number;
+  roleID: number;
+  showOnInvoice: boolean;
+  startDateTime: string; // ISO date string
+  summaryNotes: string;
+  taskID: number;
+  ticketID: number;
+  timeEntryType: number;
+}
+
 export type AutoTaskCompany = {
   id: number;
   additionalAddressInformation: string;
