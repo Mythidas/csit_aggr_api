@@ -23,7 +23,8 @@ const tickets: FastifyPluginAsync = async (fastify, opts): Promise<void> => {
       const filters: AutoTaskAPIFilter<AutoTaskTicket> = {
         Filter: [
           { op: "gte", field: "createDate", value: dateFilter },
-          { op: "in", field: "queueID", value: [29683481, 29683508] } // Support & Triage
+          { op: "in", field: "queueID", value: [29683481, 29683508, 8] }, // Support & Triage
+          { op: "exist", field: "assignedResourceID" }
         ],
       }
 
