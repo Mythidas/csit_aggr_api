@@ -1,4 +1,4 @@
-import { AutoTaskAPIFilter, AutoTaskCategory, AutoTaskCompany, AutoTaskFieldInfo, AutoTaskFieldValue, AutoTaskResource, AutoTaskTicket, AutoTaskTimeEntry } from "./types.js";
+import { AutoTaskAPIFilter, AutoTaskBillingCode, AutoTaskCategory, AutoTaskCompany, AutoTaskFieldInfo, AutoTaskFieldValue, AutoTaskResource, AutoTaskTicket, AutoTaskTimeEntry } from "./types.js";
 
 const {
   AUTOTASK_TRACKER,
@@ -7,7 +7,7 @@ const {
 
 export default class AutoTask {
   private resources: AutoTaskResource[] = [];
-  private companies: AutoTaskCompany[] = [];
+  private billingCodes: AutoTaskBillingCode[] = [];
   private categories: AutoTaskCategory[] = [];
   private ticketFields: AutoTaskFieldInfo[] = [];
   private statusList: AutoTaskFieldValue[] = [];
@@ -26,16 +26,19 @@ export default class AutoTask {
     this.autotaskSecret = apiSecret;
   }
 
-  private async init() {
+  private async init(modules: { tickets?: boolean, timeEntries?: boolean }) {
     this.resources = await this.getResources();
-    this.companies = await this.getCompanies();
-    this.ticketFields = await this.getTicketFields();
-    this.statusList = this.getFieldList("status");
-    this.priorityList = this.getFieldList("priority");
-    this.issueList = this.getFieldList("issueType");
-    this.subIssueList = this.getFieldList("subIssueType");
-    this.queueList = this.getFieldList("queueID");
-    this.categories = await this.getCategories();
+    this.billingCodes = await this.getBillingCodes();
+
+    if (modules.tickets) {
+      this.ticketFields = await this.getTicketFields();
+      this.statusList = this.getFieldList("status");
+      this.priorityList = this.getFieldList("priority");
+      this.issueList = this.getFieldList("issueType");
+      this.subIssueList = this.getFieldList("subIssueType");
+      this.queueList = this.getFieldList("queueID");
+      this.categories = await this.getCategories();
+    }
 
     this.initialized = true;
   }
@@ -43,7 +46,7 @@ export default class AutoTask {
   async getTicketsStream(filters: AutoTaskAPIFilter<AutoTaskTicket>, nextPage: string) {
     try {
       if (!this.initialized) {
-        await this.init();
+        await this.init({ tickets: true });
         console.log('Initialized...');
       }
 
@@ -89,10 +92,8 @@ export default class AutoTask {
         const category = this.categories.find(cat => cat.id === ticket.ticketCategory);
         ticket.ticketCategory = category?.name || ticket.ticketCategory;
 
-        const company = this.companies.find(com => com.id === ticket.companyID);
-        ticket.companyName = company?.companyName || "";
-        ticket.companyID = company?.id || ticket.companyID;
-        ticket.parentCompanyID = company?.parentCompanyID || null;
+        const billingCode = this.billingCodes.find(bill => bill.id === ticket.billingCodeID);
+        ticket.workType = billingCode?.name || "N/A";
       }
 
       return { tickets: ticketItems, nextPage: ticketData.pageDetails.nextPageUrl };
@@ -105,7 +106,7 @@ export default class AutoTask {
   async getTimeEntriesStream(filters: AutoTaskAPIFilter<AutoTaskTimeEntry>, nextPage: string) {
     try {
       if (!this.initialized) {
-        await this.init();
+        await this.init({ timeEntries: true })
         console.log('Initialized...');
       }
 
@@ -129,6 +130,9 @@ export default class AutoTask {
       for (const timeEntry of timeEntryItems) {
         const resource = this.resources.find(res => res.id === timeEntry.resourceID);
         timeEntry.resourceName = resource ? `${resource.firstName} ${resource.lastName}` : "None";
+
+        const billingCode = this.billingCodes.find(bill => bill.id === timeEntry.billingCodeID);
+        timeEntry.workType = billingCode?.name || "N/A";
       }
 
       return { timeEntries: timeEntryItems, nextPage: timeEntryData.pageDetails.nextPageUrl };
@@ -202,15 +206,40 @@ export default class AutoTask {
     }
   }
 
-  private async getCompanies() {
+  private async getBillingCodes() {
     try {
-      const filters: AutoTaskAPIFilter<AutoTaskCompany> = {
+      const filters: AutoTaskAPIFilter<AutoTaskBillingCode> = {
         Filter: [
-          { field: "isActive", "op": "eq", "value": "true" },
-          { field: "companyType", "op": "eq", "value": "1" }
+          { field: "isActive", op: "eq", value: "true" },
+          { field: "billingCodeType", op: "in", value: [0, 2] }
         ]
       }
 
+      const billingCodeFetch = await fetch(`${AUTOTASK_URL}/BillingCodes/query?search=${JSON.stringify(filters)}`, {
+        method: "GET",
+        headers: {
+          "APIIntegrationcode": AUTOTASK_TRACKER!,
+          "UserName": this.autotaskUserID,
+          "Secret": this.autotaskSecret,
+          "Content-Type": "application/json"
+        }
+      });
+
+      if (!billingCodeFetch.ok) {
+        console.error(billingCodeFetch.statusText);
+        return [];
+      }
+
+      const billingCodeData = await billingCodeFetch.json() as any;
+      return billingCodeData.items as AutoTaskBillingCode[];
+    } catch (err) {
+      console.error(err);
+      return [];
+    }
+  }
+
+  async getCompanies(filters: AutoTaskAPIFilter<AutoTaskCompany>) {
+    try {
       const companyFetch = await fetch(`${AUTOTASK_URL}/Companies/query?search=${JSON.stringify(filters)}`, {
         method: "GET",
         headers: {

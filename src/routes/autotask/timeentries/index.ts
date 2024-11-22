@@ -22,7 +22,7 @@ const timeEntries: FastifyPluginAsync = async (fastify, opts): Promise<void> => 
 
       const filters: AutoTaskAPIFilter<AutoTaskTimeEntry> = {
         Filter: [
-          { op: "gte", field: "createDateTime", value: dateFilter },
+          { op: "gte", field: "dateWorked", value: dateFilter },
         ],
       }
 

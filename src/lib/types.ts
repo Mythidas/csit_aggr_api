@@ -317,6 +317,24 @@ export type AutoTaskResource = {
   userType: number;
 }
 
+export type AutoTaskBillingCode = {
+  id: number;
+  afterHoursWorkType: number;
+  billingCodeType: number;
+  department: number;
+  description: string;
+  externalNumber: string;
+  generalLedgerAccount: number;
+  isActive: boolean;
+  isExcludedFromNewContracts: boolean;
+  markupRate: number;
+  name: string;
+  taxCategoryID: number;
+  unitCost: number;
+  unitPrice: number;
+  useType: number;
+}
+
 export type AutoTaskCategory = {
   id: number;
   displayColorRGB: number;
