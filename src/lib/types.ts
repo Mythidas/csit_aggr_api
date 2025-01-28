@@ -335,6 +335,44 @@ export type AutoTaskBillingCode = {
   useType: number;
 }
 
+export type AutoTaskContract = {
+  id: number;
+  billingPreference: number;
+  billToCompanyContactID: number;
+  billToCompanyID: number;
+  companyID: number;
+  contactID: number;
+  contactName: string;
+  contractCategory: number;
+  contractExclusionSetID: number;
+  contractName: string;
+  contractNumber: string;
+  contractPeriodType: number;
+  contractType: number;
+  description: string;
+  endDate: string; // ISO date string
+  estimatedCost: number;
+  estimatedHours: number;
+  estimatedRevenue: number;
+  exclusionContractID: number;
+  internalCurrencyOverageBillingRate: number;
+  internalCurrencySetupFee: number;
+  isCompliant: boolean;
+  isDefaultContract: boolean;
+  lastModifiedDateTime: string; // ISO date string
+  opportunityID: number;
+  organizationalLevelAssociationID: number;
+  overageBillingRate: number;
+  purchaseOrderNumber: string;
+  renewedContractID: number;
+  serviceLevelAgreementID: number;
+  setupFee: number;
+  setupFeeBillingCodeID: number;
+  startDate: string; // ISO date string
+  status: number;
+  timeReportingRequiresStartAndStopTimes: number;
+};
+
 export type AutoTaskCategory = {
   id: number;
   displayColorRGB: number;

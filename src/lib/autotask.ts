@@ -1,4 +1,4 @@
-import { AutoTaskAPIFilter, AutoTaskBillingCode, AutoTaskCategory, AutoTaskCompany, AutoTaskFieldInfo, AutoTaskFieldValue, AutoTaskResource, AutoTaskTicket, AutoTaskTimeEntry } from "./types.js";
+import { AutoTaskAPIFilter, AutoTaskBillingCode, AutoTaskCategory, AutoTaskCompany, AutoTaskContract, AutoTaskFieldInfo, AutoTaskFieldValue, AutoTaskResource, AutoTaskTicket, AutoTaskTimeEntry } from "./types.js";
 
 const {
   AUTOTASK_TRACKER,
@@ -139,6 +139,37 @@ export default class AutoTask {
     } catch (err) {
       console.error(err);
       return { timeEntries: [], nextPage: "" };
+    }
+  }
+
+  async getContractsStream(filters: AutoTaskAPIFilter<AutoTaskContract>, nextPage: string) {
+    try {
+      if (!this.initialized) {
+        await this.init({});
+        console.log('Initialized...');
+      }
+
+      const contractsFetch = await fetch(nextPage || `${AUTOTASK_URL}/Contracts/query?search=${JSON.stringify(filters)}`, {
+        method: "GET",
+        headers: {
+          "APIIntegrationcode": AUTOTASK_TRACKER!,
+          "UserName": this.autotaskUserID,
+          "Secret": this.autotaskSecret,
+          "Content-Type": "application/json"
+        }
+      });
+
+      if (!contractsFetch.ok) {
+        throw Error(contractsFetch.statusText);
+      }
+
+      const contractsData: any = await contractsFetch.json();
+      const contractsItems = contractsData.items as any[];
+
+      return { contracts: contractsItems, nextPage: contractsData.pageDetails.nextPageUrl };
+    } catch (err) {
+      console.error(err);
+      return { contracts: [], nextPage: "" };
     }
   }
 

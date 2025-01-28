@@ -19,10 +19,12 @@ const timeEntries: FastifyPluginAsync = async (fastify, opts): Promise<void> => 
 
       const today = new Date();
       const dateFilter = `${year || today.getFullYear()}-${month || 1}-01`;
+      const dateFilterEnd = `${year || today.getFullYear()}-12-31`;
 
       const filters: AutoTaskAPIFilter<AutoTaskTimeEntry> = {
         Filter: [
           { op: "gte", field: "dateWorked", value: dateFilter },
+          { op: "lte", field: "dateWorked", value: dateFilterEnd }
         ],
       }
 
@@ -39,7 +41,7 @@ const timeEntries: FastifyPluginAsync = async (fastify, opts): Promise<void> => 
           total += timeEntries.timeEntries.length;
           console.log(`Processed ${total} time entries...`);
           if (timeEntries.timeEntries.length === 0 || !timeEntries.nextPage) {
-            console.log(`All time entires processed... ${timeEntries.timeEntries.length} | ${timeEntries.nextPage}`);
+            console.log(`All time entires processed... ${timeEntries.timeEntries.length}`);
             break;
           } else {
             nextPage = timeEntries.nextPage;

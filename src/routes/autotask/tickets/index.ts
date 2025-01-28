@@ -19,10 +19,12 @@ const tickets: FastifyPluginAsync = async (fastify, opts): Promise<void> => {
 
       const today = new Date();
       const dateFilter = `${year || today.getFullYear()}-${month || 1}-01`;
+      const dateFilterEnd = `${year || today.getFullYear()}-12-31`;
 
       const filters: AutoTaskAPIFilter<AutoTaskTicket> = {
         Filter: [
           { op: "gte", field: "createDate", value: dateFilter },
+          { op: "lte", field: "createDate", value: dateFilterEnd },
           { op: "in", field: "queueID", value: [29683481, 29683508, 8] }, // Support & Triage
           { op: "exist", field: "assignedResourceID" }
         ],
